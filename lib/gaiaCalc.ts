@@ -169,3 +169,70 @@ function round(n: number) {
 function roundMoney(n: number) {
   return Math.round(n * 100) / 100;
 }
+
+export type ProofEntry = {
+  id?: string;
+  createdAt?: string;
+  prevKwh: number;
+  currKwh: number;
+  days: number;
+  tariffCentsPerKwh: number;
+  note?: string;
+};
+
+export function defaultProofDraft(): ProofEntry {
+  return {
+    prevKwh: 900,          // a typical 2–3 month bill could be ~900kWh (rough)
+    currKwh: 820,
+    days: 90,
+    tariffCentsPerKwh: 35,
+    note: "",
+  };
+}
+
+export function computeProof(profile: Profile, entry: ProofEntry) {
+  const days = clamp(entry.days, 1, 365);
+  const prevPerDay = entry.prevKwh / days;
+  const currPerDay = entry.currKwh / days;
+
+  // Positive = improvement (lower usage now)
+  const kwhPerDaySaved = Math.max(0, prevPerDay - currPerDay);
+
+  const kwhSaved = kwhPerDaySaved * days;
+  const pricePerKwh = entry.tariffCentsPerKwh / 100;
+  const moneySaved = kwhSaved * pricePerKwh;
+
+  const co2AvoidedKg = kwhSaved * profile.co2KgPerKwh;
+
+  const moneyPerDay = moneySaved / days;
+
+  // Labeling (keep it simple + motivating)
+  let label: "Up" | "Flat" | "Down";
+  let explain: string;
+
+  if (kwhPerDaySaved > 0.15) {
+    label = "Up";
+    explain =
+      "You used less energy per day than last period. Keep the habit stack — this is compounding.";
+  } else if (kwhPerDaySaved > 0.02) {
+    label = "Flat";
+    explain =
+      "Slight improvement. You’re close — one focused change (standby / peak shift / hot water) will move the needle.";
+  } else {
+    label = "Down";
+    explain =
+      "No improvement detected (or usage increased). That’s not failure — it’s feedback. Pick one lever and rerun next bill.";
+  }
+
+  return {
+    prevPerDay,
+    currPerDay,
+    kwhPerDaySaved,
+    kwhSaved,
+    moneySaved,
+    moneyPerDay,
+    co2AvoidedKg,
+    label,
+    explain,
+  };
+}
