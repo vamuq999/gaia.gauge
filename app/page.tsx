@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { compute, co2PresetKgPerKwh, currencySymbol, defaultProfile, type Profile } from "../lib/gaiaCalc";
 
