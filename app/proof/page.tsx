@@ -26,13 +26,18 @@ export default function ProofPage() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Load profile
-    let loadedProfile: Profile | null = null;
+    // Load profile (non-null safe)
     try {
       const p = localStorage.getItem(PROFILE_KEY);
       if (p) {
-        loadedProfile = JSON.parse(p);
-        setProfile(loadedProfile);
+        const parsed = JSON.parse(p) as Profile;
+        setProfile(parsed);
+
+        // ✅ Upgrade: auto-set draft tariff from profile
+        setDraft((d) => ({
+          ...d,
+          tariffCentsPerKwh: parsed.tariffCentsPerKwh ?? d.tariffCentsPerKwh,
+        }));
       }
     } catch {}
 
@@ -41,12 +46,6 @@ export default function ProofPage() {
       const h = localStorage.getItem(PROOF_KEY);
       if (h) setHistory(JSON.parse(h));
     } catch {}
-
-    // ✅ Upgrade: auto-set draft tariff from profile if available
-    setDraft((d) => ({
-      ...d,
-      tariffCentsPerKwh: loadedProfile?.tariffCentsPerKwh ?? d.tariffCentsPerKwh,
-    }));
 
     setLoaded(true);
   }, []);
@@ -68,9 +67,11 @@ export default function ProofPage() {
       createdAt: new Date().toISOString(),
     };
     setHistory([entry, ...history].slice(0, 50));
+
+    // reset draft but keep tariff sticky
     setDraft((d) => ({
       ...defaultProofDraft(),
-      tariffCentsPerKwh: d.tariffCentsPerKwh, // keep tariff sticky
+      tariffCentsPerKwh: d.tariffCentsPerKwh,
     }));
   }
 
@@ -116,7 +117,9 @@ export default function ProofPage() {
                   className="input"
                   inputMode="decimal"
                   value={String(draft.prevKwh)}
-                  onChange={(e) => setDraft({ ...draft, prevKwh: safeNumber(e.target.value, draft.prevKwh) })}
+                  onChange={(e) =>
+                    setDraft({ ...draft, prevKwh: safeNumber(e.target.value, draft.prevKwh) })
+                  }
                 />
               </div>
 
@@ -126,7 +129,9 @@ export default function ProofPage() {
                   className="input"
                   inputMode="decimal"
                   value={String(draft.currKwh)}
-                  onChange={(e) => setDraft({ ...draft, currKwh: safeNumber(e.target.value, draft.currKwh) })}
+                  onChange={(e) =>
+                    setDraft({ ...draft, currKwh: safeNumber(e.target.value, draft.currKwh) })
+                  }
                 />
               </div>
             </div>
@@ -140,7 +145,9 @@ export default function ProofPage() {
                   className="input"
                   inputMode="decimal"
                   value={String(draft.days)}
-                  onChange={(e) => setDraft({ ...draft, days: safeNumber(e.target.value, draft.days) })}
+                  onChange={(e) =>
+                    setDraft({ ...draft, days: safeNumber(e.target.value, draft.days) })
+                  }
                 />
               </div>
 
@@ -151,7 +158,10 @@ export default function ProofPage() {
                   inputMode="decimal"
                   value={String(draft.tariffCentsPerKwh)}
                   onChange={(e) =>
-                    setDraft({ ...draft, tariffCentsPerKwh: safeNumber(e.target.value, draft.tariffCentsPerKwh) })
+                    setDraft({
+                      ...draft,
+                      tariffCentsPerKwh: safeNumber(e.target.value, draft.tariffCentsPerKwh),
+                    })
                   }
                 />
               </div>
@@ -166,7 +176,7 @@ export default function ProofPage() {
                   className="input"
                   value={draft.note ?? ""}
                   onChange={(e) => setDraft({ ...draft, note: e.target.value })}
-                  placeholder="e.g. stopped dryer use, cold-wash, off-peak"
+                  placeholder="e.g. cold-wash, off-peak, no dryer"
                 />
               </div>
 
@@ -186,7 +196,7 @@ export default function ProofPage() {
             </div>
 
             <div className="footer">
-              Pro tip: if your bill is in dollars only, estimate kWh from your tariff.
+              Lead with dollars. But keep the kWh honest. That’s how you win long-term.
             </div>
           </div>
         </div>
@@ -207,7 +217,7 @@ export default function ProofPage() {
                 <div className="kpiValue">
                   {sym}{Math.round(result.moneySaved)}
                 </div>
-                <div className="kpiHint">Normalized daily kWh change × days</div>
+                <div className="kpiHint">Normalized daily change × days</div>
               </div>
 
               <div className="kpi">
@@ -227,7 +237,7 @@ export default function ProofPage() {
                 <div className="kpiValue">
                   {sym}{Math.round(result.moneyPerDay * 100) / 100}
                 </div>
-                <div className="kpiHint">Momentum you can compound</div>
+                <div className="kpiHint">Compoundable momentum</div>
               </div>
 
               <div className="kpi">
@@ -259,7 +269,7 @@ export default function ProofPage() {
               {history.length === 0 && (
                 <div className="item">
                   <p className="itemTitle">No entries yet</p>
-                  <p className="itemDesc">Save your first bill-to-bill comparison and you’ll build a proof trail.</p>
+                  <p className="itemDesc">Save your first bill-to-bill comparison and build your proof trail.</p>
                 </div>
               )}
 
@@ -290,7 +300,7 @@ export default function ProofPage() {
               })}
             </div>
 
-            <div className="footer">Next: badge minting (optional) once you like the scoring.</div>
+            <div className="footer">Next: Proof Score + optional badge minting once you like the scoring.</div>
           </div>
         </div>
       </section>
