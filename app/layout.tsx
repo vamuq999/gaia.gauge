@@ -1,3 +1,5 @@
+import "./globals.css";
+
 export const metadata = {
   title: "GaiaGauge",
   description: "Measure energy. Reduce waste. Prove progress.",
