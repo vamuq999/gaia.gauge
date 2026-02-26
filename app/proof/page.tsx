@@ -1,5 +1,6 @@
 "use client";
 
+import { computeScore } from "../../lib/gaiaCalc";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
