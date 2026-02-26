@@ -1,19 +1,21 @@
 "use client";
 
-import { computeScore } from "../../lib/gaiaCalc";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   currencySymbol,
   type Profile,
   type ProofEntry,
+  type ProofScore,
   defaultProfile,
   defaultProofDraft,
   computeProof,
+  computeScore,
 } from "../../lib/gaiaCalc";
 
 const PROFILE_KEY = "gaiagauge:v1:profile";
 const PROOF_KEY = "gaiagauge:v1:proof";
+const DRAFT_KEY = "gaiagauge:v1:proof:draft";
 
 function safeNumber(v: string, fallback: number) {
   const n = Number(v);
@@ -26,15 +28,16 @@ export default function ProofPage() {
   const [history, setHistory] = useState<ProofEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
 
+  // Initial load: profile, draft, history + auto-tariff from profile
   useEffect(() => {
-    // Load profile (non-null safe)
+    // Load profile
     try {
       const p = localStorage.getItem(PROFILE_KEY);
       if (p) {
         const parsed = JSON.parse(p) as Profile;
         setProfile(parsed);
 
-        // ✅ Upgrade: auto-set draft tariff from profile
+        // Auto-set tariff from profile on first load (nice UX)
         setDraft((d) => ({
           ...d,
           tariffCentsPerKwh: parsed.tariffCentsPerKwh ?? d.tariffCentsPerKwh,
@@ -42,15 +45,30 @@ export default function ProofPage() {
       }
     } catch {}
 
+    // Load draft
+    try {
+      const d = localStorage.getItem(DRAFT_KEY);
+      if (d) setDraft(JSON.parse(d) as ProofEntry);
+    } catch {}
+
     // Load history
     try {
       const h = localStorage.getItem(PROOF_KEY);
-      if (h) setHistory(JSON.parse(h));
+      if (h) setHistory(JSON.parse(h) as ProofEntry[]);
     } catch {}
 
     setLoaded(true);
   }, []);
 
+  // Autosave draft
+  useEffect(() => {
+    if (!loaded) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch {}
+  }, [draft, loaded]);
+
+  // Autosave history
   useEffect(() => {
     if (!loaded) return;
     try {
@@ -59,7 +77,9 @@ export default function ProofPage() {
   }, [history, loaded]);
 
   const sym = currencySymbol(profile.currency);
+
   const result = useMemo(() => computeProof(profile, draft), [profile, draft]);
+  const score: ProofScore = useMemo(() => computeScore(profile, history), [profile, history]);
 
   function saveEntry() {
     const entry: ProofEntry = {
@@ -67,13 +87,17 @@ export default function ProofPage() {
       id: crypto.randomUUID?.() ?? String(Date.now()),
       createdAt: new Date().toISOString(),
     };
+
     setHistory([entry, ...history].slice(0, 50));
 
-    // reset draft but keep tariff sticky
+    // Reset draft but keep tariff sticky
     setDraft((d) => ({
       ...defaultProofDraft(),
       tariffCentsPerKwh: d.tariffCentsPerKwh,
     }));
+
+    // Optional: if you want to clear the note too (default does it anyway)
+    // setDraft((d) => ({ ...d, note: "" }));
   }
 
   function removeEntry(id: string) {
@@ -94,9 +118,13 @@ export default function ProofPage() {
           <h1 className="h1">Savings Proof</h1>
           <p className="sub">Bill-to-bill delta. Lead with money. Back it with kWh + CO₂.</p>
         </div>
+
         <div className="badgeRow">
           <span className="badge">Phase 2</span>
           <span className="badge">Local-first</span>
+          <span className="badge">
+            {score.badge} · Score {score.score}
+          </span>
           <Link className="badge" href="/">
             ← Back to GaiaGauge
           </Link>
@@ -110,6 +138,7 @@ export default function ProofPage() {
             <p className="cardTitle">Proof Inputs</p>
             <span className="badge">No upload needed</span>
           </div>
+
           <div className="cardBody">
             <div className="row">
               <div className="field">
@@ -146,9 +175,7 @@ export default function ProofPage() {
                   className="input"
                   inputMode="decimal"
                   value={String(draft.days)}
-                  onChange={(e) =>
-                    setDraft({ ...draft, days: safeNumber(e.target.value, draft.days) })
-                  }
+                  onChange={(e) => setDraft({ ...draft, days: safeNumber(e.target.value, draft.days) })}
                 />
               </div>
 
@@ -208,6 +235,7 @@ export default function ProofPage() {
             <p className="cardTitle">Proof Output</p>
             <span className="badge">Money first</span>
           </div>
+
           <div className="cardBody">
             <div className="kpis">
               <div className="kpi">
@@ -265,7 +293,28 @@ export default function ProofPage() {
 
             <div style={{ height: 12 }} />
 
-            <p className="cardTitle" style={{ margin: 0 }}>History</p>
+            <div className="kpi">
+              <div className="kpiTop">
+                <div className="kpiLabel">Proof Score</div>
+                <div className="pill">{score.badge}</div>
+              </div>
+
+              <div className="kpiValue">{score.score}</div>
+
+              <div className="kpiHint">
+                {sym}{Math.round(score.totalSaved)} total saved ·{" "}
+                {Math.round(score.totalKwh)} kWh ·{" "}
+                {Math.round(score.totalCo2)} kg CO₂ ·{" "}
+                {score.streak} entries ·{" "}
+                {sym}{Math.round(score.avgPerDay * 100) / 100}/day avg
+              </div>
+            </div>
+
+            <div style={{ height: 12 }} />
+
+            <p className="cardTitle" style={{ margin: 0 }}>
+              History
+            </p>
             <div className="list">
               {history.length === 0 && (
                 <div className="item">
@@ -284,6 +333,7 @@ export default function ProofPage() {
                       </p>
                       <span className="pill">{r.label}</span>
                     </div>
+
                     <p className="itemDesc">
                       {Math.round(r.kwhSaved)} kWh · {Math.round(r.co2AvoidedKg)} kg CO₂ ·{" "}
                       {sym}{Math.round(r.moneyPerDay * 100) / 100}/day ·{" "}
@@ -301,7 +351,9 @@ export default function ProofPage() {
               })}
             </div>
 
-            <div className="footer">Next: Proof Score + optional badge minting once you like the scoring.</div>
+            <div className="footer">
+              Next: Proof Score → optional badge minting once you like the scoring.
+            </div>
           </div>
         </div>
       </section>
