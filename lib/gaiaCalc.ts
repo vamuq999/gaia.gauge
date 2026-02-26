@@ -236,3 +236,64 @@ export function computeProof(profile: Profile, entry: ProofEntry) {
     explain,
   };
 }
+
+// ===== PROOF SCORE SYSTEM =====
+
+export type ProofScore = {
+  totalSaved: number;
+  totalKwh: number;
+  totalCo2: number;
+  avgPerDay: number;
+  streak: number;
+  score: number;
+  badge: "Seedling" | "Sapling" | "Grove" | "Guardian";
+};
+
+export function computeScore(profile: Profile, entries: ProofEntry[]): ProofScore {
+  if (!entries.length) {
+    return {
+      totalSaved: 0,
+      totalKwh: 0,
+      totalCo2: 0,
+      avgPerDay: 0,
+      streak: 0,
+      score: 0,
+      badge: "Seedling",
+    };
+  }
+
+  let totalSaved = 0;
+  let totalKwh = 0;
+  let totalCo2 = 0;
+  let totalPerDay = 0;
+
+  for (const e of entries) {
+    const r = computeProof(profile, e);
+    totalSaved += r.moneySaved;
+    totalKwh += r.kwhSaved;
+    totalCo2 += r.co2AvoidedKg;
+    totalPerDay += r.moneyPerDay;
+  }
+
+  const avgPerDay = totalPerDay / entries.length;
+
+  // Simple streak = number of entries (we refine later)
+  const streak = entries.length;
+
+  const score = Math.round(totalSaved + avgPerDay * 30 + streak * 5);
+
+  let badge: ProofScore["badge"] = "Seedling";
+  if (score > 50) badge = "Sapling";
+  if (score > 150) badge = "Grove";
+  if (score > 400) badge = "Guardian";
+
+  return {
+    totalSaved,
+    totalKwh,
+    totalCo2,
+    avgPerDay,
+    streak,
+    score,
+    badge,
+  };
+}
