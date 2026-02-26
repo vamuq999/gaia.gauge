@@ -53,7 +53,9 @@ export default function Page() {
   function reset() {
     const fresh = defaultProfile();
     setProfile(fresh);
-    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
   }
 
   return (
@@ -135,7 +137,9 @@ export default function Page() {
                   className="input"
                   inputMode="decimal"
                   value={String(profile.co2KgPerKwh)}
-                  onChange={(e) => setProfile({ ...profile, co2KgPerKwh: safeNumber(e.target.value, profile.co2KgPerKwh) })}
+                  onChange={(e) =>
+                    setProfile({ ...profile, co2KgPerKwh: safeNumber(e.target.value, profile.co2KgPerKwh) })
+                  }
                 />
               </div>
             </div>
@@ -175,7 +179,9 @@ export default function Page() {
                   className="input"
                   inputMode="decimal"
                   value={String(profile.peakShiftPct)}
-                  onChange={(e) => setProfile({ ...profile, peakShiftPct: safeNumber(e.target.value, profile.peakShiftPct) })}
+                  onChange={(e) =>
+                    setProfile({ ...profile, peakShiftPct: safeNumber(e.target.value, profile.peakShiftPct) })
+                  }
                 />
               </div>
 
@@ -192,13 +198,23 @@ export default function Page() {
               </div>
             </div>
 
+            {/* ✅ Actions */}
             <div className="actions">
-              <button className="btn btnPrimary" onClick={exportReport}>
+              <Link className="btn btnPrimary" href="/proof">
+                Start Savings Proof →
+              </Link>
+
+              <button className="btn" onClick={exportReport}>
                 Export report (.json)
               </button>
-              <button className="btn" onClick={() => setProfile({ ...profile, co2KgPerKwh: co2PresetKgPerKwh(profile.region) })}>
+
+              <button
+                className="btn"
+                onClick={() => setProfile({ ...profile, co2KgPerKwh: co2PresetKgPerKwh(profile.region) })}
+              >
                 Reset CO₂ to region default
               </button>
+
               <button className="btn btnDanger" onClick={reset}>
                 Reset all
               </button>
@@ -224,7 +240,8 @@ export default function Page() {
                   <div className="pill">Est.</div>
                 </div>
                 <div className="kpiValue">
-                  {sym}{Math.round(results.monthlyCost)}
+                  {sym}
+                  {Math.round(results.monthlyCost)}
                 </div>
                 <div className="kpiHint">Tariff × monthly kWh</div>
               </div>
@@ -234,9 +251,7 @@ export default function Page() {
                   <div className="kpiLabel">Monthly CO₂</div>
                   <div className="pill">Est.</div>
                 </div>
-                <div className="kpiValue">
-                  {Math.round(results.monthlyCo2Kg)} kg
-                </div>
+                <div className="kpiValue">{Math.round(results.monthlyCo2Kg)} kg</div>
                 <div className="kpiHint">Factor × monthly kWh</div>
               </div>
 
@@ -246,7 +261,8 @@ export default function Page() {
                   <div className="pill">12×</div>
                 </div>
                 <div className="kpiValue">
-                  {sym}{Math.round(results.yearlyCost)}
+                  {sym}
+                  {Math.round(results.yearlyCost)}
                 </div>
                 <div className="kpiHint">Projection</div>
               </div>
@@ -256,9 +272,7 @@ export default function Page() {
                   <div className="kpiLabel">Yearly CO₂</div>
                   <div className="pill">12×</div>
                 </div>
-                <div className="kpiValue">
-                  {Math.round(results.yearlyCo2Kg)} kg
-                </div>
+                <div className="kpiValue">{Math.round(results.yearlyCo2Kg)} kg</div>
                 <div className="kpiHint">Projection</div>
               </div>
             </div>
@@ -270,17 +284,18 @@ export default function Page() {
                 <div className="kpiLabel">Recoverable “Waste” (standby + peak efficiency)</div>
                 <div className="pill">Target</div>
               </div>
-              <div className="kpiValue">
-                {Math.round(results.wasteKwh)} kWh/mo
-              </div>
+              <div className="kpiValue">{Math.round(results.wasteKwh)} kWh/mo</div>
               <div className="kpiHint">
-                ≈ {sym}{Math.round(results.wasteCost)}/mo · {Math.round(results.wasteCo2Kg)} kg CO₂/mo
+                ≈ {sym}
+                {Math.round(results.wasteCost)}/mo · {Math.round(results.wasteCo2Kg)} kg CO₂/mo
               </div>
             </div>
 
             <div style={{ height: 12 }} />
 
-            <p className="cardTitle" style={{ margin: 0 }}>Quick Wins</p>
+            <p className="cardTitle" style={{ margin: 0 }}>
+              Quick Wins
+            </p>
             <div className="list">
               {results.quickWins.map((w, idx) => (
                 <div className="item" key={idx}>
@@ -296,9 +311,7 @@ export default function Page() {
               ))}
             </div>
 
-            <div className="footer">
-              Next phase: “Savings Proof” (bill-to-bill delta + badges).
-            </div>
+            <div className="footer">Next phase: “Savings Proof” (bill-to-bill delta + badges).</div>
           </div>
         </div>
       </section>
