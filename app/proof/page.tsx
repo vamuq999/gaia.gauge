@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import {
   currencySymbol,
   type Profile,
@@ -26,14 +26,28 @@ export default function ProofPage() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    // Load profile
+    let loadedProfile: Profile | null = null;
     try {
       const p = localStorage.getItem(PROFILE_KEY);
-      if (p) setProfile(JSON.parse(p));
+      if (p) {
+        loadedProfile = JSON.parse(p);
+        setProfile(loadedProfile);
+      }
     } catch {}
+
+    // Load history
     try {
       const h = localStorage.getItem(PROOF_KEY);
       if (h) setHistory(JSON.parse(h));
     } catch {}
+
+    // ✅ Upgrade: auto-set draft tariff from profile if available
+    setDraft((d) => ({
+      ...d,
+      tariffCentsPerKwh: loadedProfile?.tariffCentsPerKwh ?? d.tariffCentsPerKwh,
+    }));
+
     setLoaded(true);
   }, []);
 
@@ -45,7 +59,6 @@ export default function ProofPage() {
   }, [history, loaded]);
 
   const sym = currencySymbol(profile.currency);
-
   const result = useMemo(() => computeProof(profile, draft), [profile, draft]);
 
   function saveEntry() {
@@ -55,7 +68,10 @@ export default function ProofPage() {
       createdAt: new Date().toISOString(),
     };
     setHistory([entry, ...history].slice(0, 50));
-    setDraft(defaultProofDraft());
+    setDraft((d) => ({
+      ...defaultProofDraft(),
+      tariffCentsPerKwh: d.tariffCentsPerKwh, // keep tariff sticky
+    }));
   }
 
   function removeEntry(id: string) {
@@ -74,9 +90,7 @@ export default function ProofPage() {
       <section className="header">
         <div className="brand">
           <h1 className="h1">Savings Proof</h1>
-          <p className="sub">
-            Bill-to-bill delta. Lead with money. Back it with kWh + CO₂.
-          </p>
+          <p className="sub">Bill-to-bill delta. Lead with money. Back it with kWh + CO₂.</p>
         </div>
         <div className="badgeRow">
           <span className="badge">Phase 2</span>
@@ -102,9 +116,7 @@ export default function ProofPage() {
                   className="input"
                   inputMode="decimal"
                   value={String(draft.prevKwh)}
-                  onChange={(e) =>
-                    setDraft({ ...draft, prevKwh: safeNumber(e.target.value, draft.prevKwh) })
-                  }
+                  onChange={(e) => setDraft({ ...draft, prevKwh: safeNumber(e.target.value, draft.prevKwh) })}
                 />
               </div>
 
@@ -114,9 +126,7 @@ export default function ProofPage() {
                   className="input"
                   inputMode="decimal"
                   value={String(draft.currKwh)}
-                  onChange={(e) =>
-                    setDraft({ ...draft, currKwh: safeNumber(e.target.value, draft.currKwh) })
-                  }
+                  onChange={(e) => setDraft({ ...draft, currKwh: safeNumber(e.target.value, draft.currKwh) })}
                 />
               </div>
             </div>
@@ -130,9 +140,7 @@ export default function ProofPage() {
                   className="input"
                   inputMode="decimal"
                   value={String(draft.days)}
-                  onChange={(e) =>
-                    setDraft({ ...draft, days: safeNumber(e.target.value, draft.days) })
-                  }
+                  onChange={(e) => setDraft({ ...draft, days: safeNumber(e.target.value, draft.days) })}
                 />
               </div>
 
@@ -143,10 +151,7 @@ export default function ProofPage() {
                   inputMode="decimal"
                   value={String(draft.tariffCentsPerKwh)}
                   onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      tariffCentsPerKwh: safeNumber(e.target.value, draft.tariffCentsPerKwh),
-                    })
+                    setDraft({ ...draft, tariffCentsPerKwh: safeNumber(e.target.value, draft.tariffCentsPerKwh) })
                   }
                 />
               </div>
@@ -167,12 +172,7 @@ export default function ProofPage() {
 
               <div className="field">
                 <div className="label">CO₂ factor (kg per kWh)</div>
-                <input
-                  className="input"
-                  inputMode="decimal"
-                  value={String(profile.co2KgPerKwh)}
-                  disabled
-                />
+                <input className="input" inputMode="decimal" value={String(profile.co2KgPerKwh)} disabled />
               </div>
             </div>
 
@@ -207,9 +207,7 @@ export default function ProofPage() {
                 <div className="kpiValue">
                   {sym}{Math.round(result.moneySaved)}
                 </div>
-                <div className="kpiHint">
-                  Based on normalized daily kWh change × days
-                </div>
+                <div className="kpiHint">Normalized daily kWh change × days</div>
               </div>
 
               <div className="kpi">
@@ -217,12 +215,8 @@ export default function ProofPage() {
                   <div className="kpiLabel">kWh saved</div>
                   <div className="pill">Delta</div>
                 </div>
-                <div className="kpiValue">
-                  {Math.round(result.kwhSaved)} kWh
-                </div>
-                <div className="kpiHint">
-                  Prev/day − Curr/day (if positive)
-                </div>
+                <div className="kpiValue">{Math.round(result.kwhSaved)} kWh</div>
+                <div className="kpiHint">Prev/day − Curr/day (if positive)</div>
               </div>
 
               <div className="kpi">
@@ -233,9 +227,7 @@ export default function ProofPage() {
                 <div className="kpiValue">
                   {sym}{Math.round(result.moneyPerDay * 100) / 100}
                 </div>
-                <div className="kpiHint">
-                  Momentum you can compound
-                </div>
+                <div className="kpiHint">Momentum you can compound</div>
               </div>
 
               <div className="kpi">
@@ -243,12 +235,8 @@ export default function ProofPage() {
                   <div className="kpiLabel">CO₂ avoided</div>
                   <div className="pill">Impact</div>
                 </div>
-                <div className="kpiValue">
-                  {Math.round(result.co2AvoidedKg)} kg
-                </div>
-                <div className="kpiHint">
-                  kWh saved × CO₂ factor
-                </div>
+                <div className="kpiValue">{Math.round(result.co2AvoidedKg)} kg</div>
+                <div className="kpiHint">kWh saved × CO₂ factor</div>
               </div>
             </div>
 
@@ -271,9 +259,7 @@ export default function ProofPage() {
               {history.length === 0 && (
                 <div className="item">
                   <p className="itemTitle">No entries yet</p>
-                  <p className="itemDesc">
-                    Save your first bill-to-bill comparison and you’ll build a proof trail.
-                  </p>
+                  <p className="itemDesc">Save your first bill-to-bill comparison and you’ll build a proof trail.</p>
                 </div>
               )}
 
@@ -304,9 +290,7 @@ export default function ProofPage() {
               })}
             </div>
 
-            <div className="footer">
-              Next: badge minting (optional) once you like the scoring.
-            </div>
+            <div className="footer">Next: badge minting (optional) once you like the scoring.</div>
           </div>
         </div>
       </section>
