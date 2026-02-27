@@ -210,7 +210,12 @@ export default function ProofPage() {
 
               <div className="field">
                 <div className="label">CO₂ factor (kg per kWh)</div>
-                <input className="input" inputMode="decimal" value={String(profile.co2KgPerKwh)} disabled />
+                <input
+                  className="input"
+                  inputMode="decimal"
+                  value={String(profile.co2KgPerKwh)}
+                  disabled
+                />
               </div>
             </div>
 
@@ -244,7 +249,8 @@ export default function ProofPage() {
                   <div className="pill">Delta</div>
                 </div>
                 <div className="kpiValue">
-                  {sym}{Math.round(result.moneySaved)}
+                  {sym}
+                  {Math.round(result.moneySaved)}
                 </div>
                 <div className="kpiHint">Normalized daily change × days</div>
               </div>
@@ -264,7 +270,8 @@ export default function ProofPage() {
                   <div className="pill">Rate</div>
                 </div>
                 <div className="kpiValue">
-                  {sym}{Math.round(result.moneyPerDay * 100) / 100}
+                  {sym}
+                  {Math.round(result.moneyPerDay * 100) / 100}
                 </div>
                 <div className="kpiHint">Compoundable momentum</div>
               </div>
@@ -302,11 +309,10 @@ export default function ProofPage() {
               <div className="kpiValue">{score.score}</div>
 
               <div className="kpiHint">
-                {sym}{Math.round(score.totalSaved)} total saved ·{" "}
-                {Math.round(score.totalKwh)} kWh ·{" "}
-                {Math.round(score.totalCo2)} kg CO₂ ·{" "}
-                {score.streak} entries ·{" "}
-                {sym}{Math.round(score.avgPerDay * 100) / 100}/day avg
+                {sym}
+                {Math.round(score.totalSaved)} total saved · {Math.round(score.totalKwh)} kWh ·{" "}
+                {Math.round(score.totalCo2)} kg CO₂ · {score.streak} entries · {sym}
+                {Math.round(score.avgPerDay * 100) / 100}/day avg
               </div>
             </div>
 
@@ -319,7 +325,9 @@ export default function ProofPage() {
               {history.length === 0 && (
                 <div className="item">
                   <p className="itemTitle">No entries yet</p>
-                  <p className="itemDesc">Save your first bill-to-bill comparison and build your proof trail.</p>
+                  <p className="itemDesc">
+                    Save your first bill-to-bill comparison and build your proof trail.
+                  </p>
                 </div>
               )}
 
@@ -329,14 +337,15 @@ export default function ProofPage() {
                   <div className="item" key={h.id}>
                     <div className="itemTop">
                       <p className="itemTitle">
-                        {sym}{Math.round(r.moneySaved)} saved
+                        {sym}
+                        {Math.round(r.moneySaved)} saved
                       </p>
                       <span className="pill">{r.label}</span>
                     </div>
 
                     <p className="itemDesc">
-                      {Math.round(r.kwhSaved)} kWh · {Math.round(r.co2AvoidedKg)} kg CO₂ ·{" "}
-                      {sym}{Math.round(r.moneyPerDay * 100) / 100}/day ·{" "}
+                      {Math.round(r.kwhSaved)} kWh · {Math.round(r.co2AvoidedKg)} kg CO₂ · {sym}
+                      {Math.round(r.moneyPerDay * 100) / 100}/day ·{" "}
                       {new Date(h.createdAt ?? "").toLocaleDateString()}
                       {h.note ? ` · “${h.note}”` : ""}
                     </p>
@@ -357,6 +366,14 @@ export default function ProofPage() {
           </div>
         </div>
       </section>
+
+      {/* Minimal footer */}
+      <footer style={{ marginTop: 24, paddingTop: 16, opacity: 0.75, fontSize: 12 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "space-between" }}>
+          <span>© {new Date().getFullYear()} VoltaraLabs</span>
+          <a href="mailto:VoltaraLabs@gmail.com">VoltaraLabs@gmail.com</a>
+        </div>
+      </footer>
     </main>
   );
 }
